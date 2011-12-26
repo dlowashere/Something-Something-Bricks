@@ -15,7 +15,7 @@ from brick import DoubleBrick
 from brick import Brick
 from color import *
 
-def spread_break(stacked_bricks, column_top, col, row, breaker_color):
+def spread_break(stacked_bricks, column_top, col, row, breaker_color, score):
   """
   Break the brick at col, row and recursively call on surrounding bricks.
   Arguments:
@@ -24,23 +24,27 @@ def spread_break(stacked_bricks, column_top, col, row, breaker_color):
     col               Column index to spread break
     row               Row index to spread break
     breaker_color     Color of break to spread
+    score             Current score
   """
   # Replace image with a broken brick
   #stacked_bricks[col][row].break_brick()
   stacked_bricks[col][row] = Brick()
   # Decrease top of column      
-  column_top[col] += bh
-  
+  column_top[col] += bh  
+  # Increment score for each brick destroyed
+  score += 10
 
   # Spread to surrounding blue bricks
   if col > 0 and stacked_bricks[col-1][row].color == breaker_color:
-    spread_break(stacked_bricks, column_top, col-1, row, breaker_color)
+    score = spread_break(stacked_bricks, column_top, col-1, row, breaker_color, score)
   if col < num_cols-1 and stacked_bricks[col+1][row].color == breaker_color:
-    spread_break(stacked_bricks, column_top, col+1, row, breaker_color)
+    score = spread_break(stacked_bricks, column_top, col+1, row, breaker_color, score)
   if row > 0 and stacked_bricks[col][row-1].color == breaker_color:
-    spread_break(stacked_bricks, column_top, col, row-1, breaker_color)
+    score = spread_break(stacked_bricks, column_top, col, row-1, breaker_color, score)
   if row < num_rows-1 and stacked_bricks[col][row+1].color == breaker_color:
-    spread_break(stacked_bricks, column_top, col, row+1, breaker_color)
+    score = spread_break(stacked_bricks, column_top, col, row+1, breaker_color, score)
+
+  return score
 
 def drop_bricks(stacked_bricks, column_top):
   """
@@ -62,12 +66,13 @@ def drop_bricks(stacked_bricks, column_top):
         # Create an empty brick at the top
         stacked_bricks[col][0] = Brick()
         
-def break_bricks(stacked_bricks, column_top):
+def break_bricks(stacked_bricks, column_top, score):
   """
   Remove any bricks marked as broken.
   Arguments:
     stacked_bricks    Array of brick objects already stacked
     column_top        Top pixel of each column    
+    score             Current score
   """
   # Run at least once
   broken = True
@@ -87,7 +92,7 @@ def break_bricks(stacked_bricks, column_top):
             (row > 0 and stacked_bricks[col][row-1].color == breaker_color) or \
             (row < num_rows-1 and stacked_bricks[col][row+1].color == breaker_color):
             # Use spread_break to recursively break proper bricks
-            spread_break(stacked_bricks, column_top, col, row, breaker_color)
+            score = spread_break(stacked_bricks, column_top, col, row, breaker_color, score)
             # Play sound for breaking bricks
             snd_break.play()
             # Bricks have been broken
@@ -97,27 +102,34 @@ def break_bricks(stacked_bricks, column_top):
     if broken:
       # Drop bricks to fill up space
       drop_bricks(stacked_bricks, column_top)
-  
-# number of rows and columns in play area
-num_rows = 13
-num_cols = 6
+      
+  return score
 
+## Size parameters  
+# number of rows and columns in play area
+num_rows = 15
+num_cols = 6
+# Column to generate bricks in (0 indexed)
+gen_col = 3
 # Block width, used to space out objects
 block_size = bw, bh = (32, 32)
-
 # Min, max position of block's left edge
 max_pos_x = bw*num_cols;
 min_pos_x = bw;
-# Lowest position of block's top edge
+# Lowest/highest position of block's top edge
 max_pos_y = bh*num_rows;
+min_pos_y = bh;
 
 ## Pygame initialization
-# Reduce sound buffer size to reduce lag
+# Reduce sound buffer size (4096 to 512) to reduce lag
 pygame.mixer.pre_init(44100, -16, 2, 512)
-# Initialize pygame screen    
+# Initialize Pygame    
 pygame.init()
-size = width, height = (num_cols+2)*bw, (num_rows+2)*bh
+# Window size
+size = width, height = (num_cols+2)*2*bw, (num_rows+2)*bh
+# Initialize window
 screen = pygame.display.set_mode(size)
+pygame.display.set_caption('Something Something Bricks')
 
 # Clock for keeping track of fps
 fps_clock = pygame.time.Clock()
@@ -130,19 +142,24 @@ fallspeed_fast = 10
 fallspeed = fallspeed_slow
 
 # Create first brick
-db = DoubleBrick(brick_colors, (4*bw, bh), block_size)
+db = DoubleBrick(brick_colors, ((gen_col+1)*bw, bh), block_size)
 bricks_list = [db]
 # First brick in pair 
 b1 = db.brick1
 # Second brick in pair
 b2 = db.brick2
 
+## Game state
 # keep track of top of each column
 column_top = [max_pos_y]*num_cols
-# Array keeping track of stacked gems (column from left, row from top)
+# Array keeping track of stacked bricks (column from left, row from top)
 stacked_bricks = [0]*num_cols
 for i in range(num_cols):
   stacked_bricks[i] = [Brick()]*num_rows
+# Initialize score
+score = 0
+# Font object for rendering text
+font_obj = pygame.font.Font(None, 28)
   
 ## Sounds
 # Directory where sounds are kept
@@ -275,10 +292,24 @@ while True:
   # Blank screen
   screen.fill(black)
   
+  ## Write score
+  # String for score information
+  score_msg = "Score: %d" % score
+  # Surface containing score text
+  score_surface = font_obj.render(score_msg, True, white)
+  # Create rect object to specify where to place text
+  score_rect = score_surface.get_rect()
+  score_rect.topleft = (max_pos_x + 2*bw, 2*bh)
+  screen.blit(score_surface, score_rect)
+  
   # Draw walls
   pygame.draw.line(screen, white, (bw, bh), (bw, (num_rows+1)*bh), 1)
   pygame.draw.line(screen, white, (bw, (num_rows+1)*bh), ((num_cols+1)*bw, (num_rows+1)*bh), 1)
   pygame.draw.line(screen, white, ((num_cols+1)*bw, bh), ((num_cols+1)*bw, (num_rows+1)*bh), 1)
+  # Generation line
+  pygame.draw.line(screen, white, (bw, bh), ((num_cols+1)*bw, bh))
+  # Game over line
+  pygame.draw.line(screen, gray, (bw, 3*bh), ((num_cols+1)*bw, 3*bh))
   """
   # Draw vertical grid lines
   for x in range(5):
@@ -320,17 +351,24 @@ while True:
     stacked_bricks[b1.get_col_index()][b1.get_row_index()] = b1
     stacked_bricks[b2.get_col_index()][b2.get_row_index()] = b2
     
-    # Handle breaking
-    break_bricks(stacked_bricks, column_top)
+    # Handle breaking and update score
+    score = break_bricks(stacked_bricks, column_top, score)
     
-    # Create new brick
-    db = DoubleBrick(brick_colors, (4*bw, bh), block_size)
-    # Add to list of existing bricks
-    bricks_list.append(db)
-    # First brick in pair 
-    b1 = db.brick1
-    # Second brick in pair
-    b2 = db.brick2
+    # Check for game over condition
+    if column_top[gen_col] <= 3*bh:
+      print "Game Over"
+      b1 = Brick()
+      b2 = Brick()
+      #sys.exit()
+    else:
+      # Create new brick
+      db = DoubleBrick(brick_colors, ((gen_col+1)*bw, bh), block_size)
+      # Add to list of existing bricks
+      bricks_list.append(db)
+      # First brick in pair 
+      b1 = db.brick1
+      # Second brick in pair
+      b2 = db.brick2
     
   # Draw falling brick
   screen.blit(b1.image, b1.rect)
