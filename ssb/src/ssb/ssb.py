@@ -107,7 +107,7 @@ def break_bricks(stacked_bricks, column_top, score):
 
 ## Size parameters  
 # number of rows and columns in play area
-num_rows = 15
+num_rows = 14
 num_cols = 6
 # Column to generate bricks in (0 indexed)
 gen_col = 3
@@ -309,7 +309,7 @@ while True:
   # Generation line
   pygame.draw.line(screen, white, (bw, bh), ((num_cols+1)*bw, bh))
   # Game over line
-  pygame.draw.line(screen, gray, (bw, 3*bh), ((num_cols+1)*bw, 3*bh))
+  pygame.draw.line(screen, gray, (bw, 2*bh), ((num_cols+1)*bw, 2*bh))
   """
   # Draw vertical grid lines
   for x in range(5):
@@ -354,21 +354,14 @@ while True:
     # Handle breaking and update score
     score = break_bricks(stacked_bricks, column_top, score)
     
-    # Check for game over condition
-    if column_top[gen_col] <= 3*bh:
-      print "Game Over"
-      b1 = Brick()
-      b2 = Brick()
-      #sys.exit()
-    else:
-      # Create new brick
-      db = DoubleBrick(brick_colors, ((gen_col+1)*bw, bh), block_size)
-      # Add to list of existing bricks
-      bricks_list.append(db)
-      # First brick in pair 
-      b1 = db.brick1
-      # Second brick in pair
-      b2 = db.brick2
+    # Create new brick
+    db = DoubleBrick(brick_colors, ((gen_col+1)*bw, bh), block_size)
+    # Add to list of existing bricks
+    bricks_list.append(db)
+    # First brick in pair 
+    b1 = db.brick1
+    # Second brick in pair
+    b2 = db.brick2
     
   # Draw falling brick
   screen.blit(b1.image, b1.rect)
@@ -377,6 +370,23 @@ while True:
   for col in range(num_cols):
     for row in range(num_rows):
       screen.blit(stacked_bricks[col][row].image, stacked_bricks[col][row].rect)
+      
+  # Check for game over condition
+  if column_top[gen_col] < 3*bh:
+    ## Write Game Over to screen
+    # String for score information
+    gameover_msg = "Game Over"
+    # Surface containing game over text
+    gameover_surface = font_obj.render(gameover_msg, True, white)
+    # Create rect object to specify where to place text
+    gameover_rect = gameover_surface.get_rect()
+    gameover_rect.topleft = (max_pos_x + 2*bw, 4*bh)
+    screen.blit(gameover_surface, gameover_rect)
+    pygame.display.update()
+    
+    # Delay 5 seconds, and then exit game
+    pygame.time.delay(5000)
+    sys.exit()
 
   # Refresh display
   pygame.display.update()    
