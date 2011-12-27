@@ -130,6 +130,8 @@ size = width, height = (num_cols+2)*2*bw, (num_rows+2)*bh
 # Initialize window
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption('Something Something Bricks')
+# Font object for rendering text
+font_obj = pygame.font.Font(None, 28)
 
 # Clock for keeping track of fps
 fps_clock = pygame.time.Clock()
@@ -158,8 +160,6 @@ for i in range(num_cols):
   stacked_bricks[i] = [Brick()]*num_rows
 # Initialize score
 score = 0
-# Font object for rendering text
-font_obj = pygame.font.Font(None, 28)
   
 ## Sounds
 # Directory where sounds are kept
