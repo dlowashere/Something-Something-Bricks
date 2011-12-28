@@ -85,6 +85,12 @@ class Brick(pygame.sprite.Sprite):
     self.image = self._img_break
     # Set color to black so this brick is not "rebroken"
     self.color = black
+    
+  def empty(self):
+    """
+    Return whether brick is empty (color = black).
+    """
+    return self.color == black
 
 class DoubleBrick:
   """
@@ -119,3 +125,27 @@ class DoubleBrick:
     else:
       return False
     
+  def top_edge(self):
+    """
+    Return top edge of top brick.
+    """
+    return min(self.brick1.rect.top, self.brick2.rect.top)
+  
+  def bottom_edge(self):
+    """
+    Return top edge of bottom brick.
+    """
+    return max(self.brick1.rect.top, self.brick2.rect.top)
+  
+  def left_edge(self):
+    """
+    Return left edge of left brick.
+    """
+    return min(self.brick1.rect.left, self.brick2.rect.left)
+  
+  def right_edge(self):
+    """
+    Return left edge of right brick.
+    """
+    return max(self.brick1.rect.left, self.brick2.rect.left)
+  
