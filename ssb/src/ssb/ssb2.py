@@ -17,7 +17,7 @@ from menu2 import Menu
 
 ## Size parameters  
 # number of rows and columns in play area
-board_size = num_cols, num_rows = 6, 14
+board_size = num_cols, num_rows = 6, 15
 # Block width, used to space out objects
 brick_size = bw, bh = (32, 32)
 
@@ -143,7 +143,7 @@ while True:
   # Generation line
   pygame.draw.line(screen, white, (bw, bh), ((num_cols+1)*bw, bh))
   # Game over line
-  pygame.draw.line(screen, gray, (bw, 2*bh), ((num_cols+1)*bw, 2*bh))
+  pygame.draw.line(screen, gray, (bw, 3*bh), ((num_cols+1)*bw, 3*bh))
   """
   # Draw vertical grid lines
   for x in range(5):
@@ -164,10 +164,8 @@ while True:
   elif game_state == "play":
     # If the game is not over
     if not game_board.game_over():
-      # Cause the falling brick to fall
-      game_board.fall_brick()
-      # Handle any breaking that might occur
-      game_board.break_bricks()
+      # Advance game
+      game_board.update()
     # If the game is over, return to menu
     else:
       game_state = "menu"

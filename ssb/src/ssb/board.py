@@ -94,6 +94,7 @@ class Board:
     for col in range(self.num_cols):
       self.stacked_bricks[col] = [Brick()]*self.num_rows
     # Reset fallspeed
+    self._fallspeed_slow = 1
     self.fallspeed = self._fallspeed_slow
     # Reset score
     self.score = 0
@@ -103,7 +104,7 @@ class Board:
     Create a new dropping brick.
     """
     # Create a dropping brick pair
-    self.db = DoubleBrick(self._brick_colors, (self.gen_col*self.bw + self.top, self.topleft[1]), self.brick_size)
+    self.db = DoubleBrick(self._brick_colors, (self.gen_col*self.bw + self.left, self.top), self.brick_size)
   
   def col_top(self, col):
     """
@@ -259,9 +260,10 @@ class Board:
     if not self.game_over():
       self.fallspeed = self._fallspeed_slow
     
-  def fall_brick(self):
+  def update(self):
     """
-    Drop brick by fallspeed. If the bottom is reached, then spawn a new brick.
+    Drop brick by fallspeed. If the bottom is reached, then handle breaking
+    and spawn a new brick.
     """
     # If the brick pair hasn't reached the bottom,
     if self.b1().rect.top < self.col_pix_top(self.b1_col()) - self.fallspeed and \
@@ -276,34 +278,34 @@ class Board:
       self.snd_drop.play()
           
       # Brick that hits a surface first needs to handled first (in case stacked)
-      # Set the one that hits first as b1
+      # Set the one that hits first as b1 and it's column as c1
+      # The other one is b2 in column c2
       if self.b2().rect.top >= self.col_pix_top(self.b2_col()) - self.fallspeed:
         b2, b1 = self.b1(), self.b2()
         c2, c1 = self.b1_col(), self.b2_col()
-        #col_index1, col_index2 = col_index2, col_index1
       else:
         b1, b2 = self.b1(), self.b2()
         c1, c2 = self.b1_col(), self.b2_col()
-        # Don't need to do anything, but check that other brick has hit
-        #assert(b1.rect.top >= column_top[col_index1] - fallspeed)
       # Drop bottom brick to bottom
       b1.rect.top = self.col_pix_top(c1)
       # Save to array
       self.stacked_bricks[b1.get_col_index()][b1.get_row_index()] = b1
-      # Update top position of the column
-      #column_top[col_index1] -= self.bh
-      # Now the other brick
-      #b2.rect.top = column_top[col_index2]
+      # Now drop the other brick to the bototm
       b2.rect.top = self.col_pix_top(c2)
-      #column_top[col_index2] -= bh
-      
+      # Save to array
       self.stacked_bricks[b2.get_col_index()][b2.get_row_index()] = b2
-    
-      # Handle breaking and update score
-      #score = break_bricks(stacked_bricks, column_top, score)
-      
-      # Create new brick
-      self.create_brick()
+
+      # Handle any breaking that might occur
+      self.break_bricks()
+
+      # Create new brick if the game is not over
+      if not self.game_over():
+        self.create_brick()
+      else:
+        # If the game is over because another spawned brick cannot fall,
+        # still create a new one
+        if self.stacked_bricks[self.gen_col][1].empty():
+          self.create_brick()
       
   def break_bricks(self):
     """
@@ -411,11 +413,10 @@ class Board:
     # If game is over
     if self.game_over():
       # Location to print to
-      #topleft = (self.max_pos_x + 2*self.bw, self.min_pos_y + 3*self.bh)
-      topleft = (int((self.min_pos_x + self.max_pos_x + self.bw)/2), 
+      center = (int((self.min_pos_x + self.max_pos_x + self.bw)/2), 
                  int((self.min_pos_y + self.max_pos_y + self.bh)/2))
       # Print Game Over
-      self.print_surface_center("Game Over", surface, topleft, font_obj, white, gray)
+      self.print_surface_center("Game Over", surface, center, font_obj, white, dark_gray)
       
       # If we have a new high score,
       if self.score > self.highscore:
@@ -475,7 +476,9 @@ class Board:
     """
     Return whether the game is over.
     """
-    return self.col_pix_top(self.gen_col) < 3*self.bh
+    #return self.col_pix_top(self.gen_col) < self.top + 2*self.bh
+    return not (self.stacked_bricks[self.gen_col][1].empty() and \
+      self.stacked_bricks[self.gen_col][2].empty())
   
   def read_highscore(self):
     """
