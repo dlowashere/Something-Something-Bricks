@@ -12,9 +12,11 @@ from color import *
 
 class Menu:
   
-  def __init__(self, topleft = (0, 0)):
+  def __init__(self, topleft = (0, 0), mixer=None):
     """
     Default constructor.
+      topleft    (x, y) top left corner of location for menu
+      mixer      Pygame mixer object for sounds
     """
     # Top left corner of menu
     self.left, self.top = self.topleft = topleft
@@ -22,6 +24,14 @@ class Menu:
     self.linespacing = 30
     # Which item is selected
     self.selected = "Play"
+    
+    # Add sounds
+    if mixer:
+      # Directory where sounds are kept
+      snd_dir = "../../sounds/"
+      # Sound for key press
+      self.snd_key = mixer.Sound(snd_dir + "select.wav")
+      self.snd_key.set_volume(0.1)
   
   def draw_menu(self, surface):
     """
@@ -43,13 +53,18 @@ class Menu:
     """
     Move up in the menu selections.
     """
-    self.selected = "Play"
+    if self.selected == "Exit":
+      self.selected = "Play"
+      self.snd_key.play()
+    
   
   def menu_down(self):
     """
     Move down in the menu selections.
     """
-    self.selected = "Exit"
+    if self.selected == "Play":
+      self.selected = "Exit"
+      self.snd_key.play()
 
   def print_surface(self, msg, surface, topleft, font_obj):
     """
@@ -62,7 +77,7 @@ class Menu:
     """
     # Surface containing game over text
     # Do not anti-alias, render in white
-    msg_surface = font_obj.render(msg, False, white)
+    msg_surface = font_obj.render(msg, True, white)
     # Create rect object to specify where to place text
     msg_rect = msg_surface.get_rect()
     msg_rect.topleft = topleft

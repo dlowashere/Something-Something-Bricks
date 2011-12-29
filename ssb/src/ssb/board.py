@@ -6,6 +6,7 @@ Created on Dec 22, 2011
 @author: Dan
 '''
 
+import hashlib
 import pygame
 import math
 
@@ -25,6 +26,12 @@ class Board:
   _fallspeed_slow = 1
   _fallspeed_fast = 10
   
+  # High score filename
+  _highscore_filename = "highscore.txt"
+  
+  # Key for hashing score
+  _hash_key = "SomethingSomethingBricks"
+  
   def __init__(self, board_size, brick_size, mixer):
     """
     Default constructor.
@@ -39,6 +46,7 @@ class Board:
     # Column where bricks are spawned (0 indexed)
     self.gen_col = int(math.ceil(self.num_cols/2))
     # Top left corner (pixels) of game board
+    # Indent in by one block on each side
     self.top, self.left = self.topleft = (self.bw, self.bh)
     # Min, max possible values for brick topleft corner
     self.min_pos_x = self.left
@@ -57,10 +65,16 @@ class Board:
     snd_dir = "../../sounds/"
     # Sound for key press
     self.snd_key = mixer.Sound(snd_dir + "select.wav")
+    self.snd_key.set_volume(0.1)
     # Sound for bricks broken
     self.snd_break = mixer.Sound(snd_dir + "break.wav")
+    self.snd_break.set_volume(0.2)
     # Sound when brick reaches bottom
     self.snd_drop = mixer.Sound(snd_dir + "drop.wav")
+    self.snd_drop.set_volume(0.5)
+    
+    # Get high score
+    self.read_highscore()      
   
   def start(self):
     """
@@ -324,6 +338,9 @@ class Board:
         # Drop bricks to fill up space
         self.drop_bricks()
         
+    # Fall speed increases as points are scored
+    self._fallspeed_slow = int(self.score/200) + 1
+        
   def drop_bricks(self):
     """
     Fill in any empty spaces by moving bricks above down.
@@ -384,16 +401,28 @@ class Board:
     # Font object for rendering text
     font_obj = pygame.font.Font(None, 28)
     # Location to print score
-    topleft = (self.max_pos_x + 2*self.bw, self.min_pos_y + self.bh)
+    topleft = [self.max_pos_x + 2*self.bw, self.min_pos_y + self.bh]
     # Print score to screen
     self.print_surface("Score: %d" % self.score, surface, topleft, font_obj)
+    # Print highscore to screen
+    topleft[1] += self.bh
+    self.print_surface("High score: %d" % self.highscore, surface, topleft, font_obj)
     
     # If game is over
     if self.game_over():
       # Location to print to
-      topleft = (self.max_pos_x + 2*self.bw, self.min_pos_y + 3*self.bh)
+      #topleft = (self.max_pos_x + 2*self.bw, self.min_pos_y + 3*self.bh)
+      topleft = (int((self.min_pos_x + self.max_pos_x + self.bw)/2), 
+                 int((self.min_pos_y + self.max_pos_y + self.bh)/2))
       # Print Game Over
-      self.print_surface("Game Over", surface, topleft, font_obj)
+      self.print_surface_center("Game Over", surface, topleft, font_obj, white, gray)
+      
+      # If we have a new high score,
+      if self.score > self.highscore:
+        # Update high score
+        self.highscore = self.score
+        # Save it to file 
+        self.write_highscore()
     
   def print_surface(self, msg, surface, topleft, font_obj):
     """
@@ -406,15 +435,97 @@ class Board:
     """
     # Surface containing game over text
     # Do not anti-alias, render in white
-    msg_surface = font_obj.render(msg, False, white)
+    msg_surface = font_obj.render(msg, True, white)
     # Create rect object to specify where to place text
     msg_rect = msg_surface.get_rect()
     msg_rect.topleft = topleft
     surface.blit(msg_surface, msg_rect)
+  
+  def print_surface_center(self, msg, surface, center, font_obj, color=white, bg_color=None):
+    """
+    Print the passed msg string to the surface at location specified by center.
+    Arguments
+      msg        String to be displayed.
+      surface    Pygame surface to print string to.
+      center     (x, y) center location of where to print to
+      font_obj   Pygame font object for text rendering.
+      color      Color to use for printing.
+      bg_color   Background color for text box. Default is no box.
+    """
+    # Surface containing game over text
+    # Do not anti-alias, render in white
+    msg_surface = font_obj.render(msg, True, color)
+    # Create rect object to specify where to place text
+    msg_rect = msg_surface.get_rect()
+    msg_rect.center = center
     
+    # Draw background box if there is one
+    if bg_color:
+      bg_surface = msg_surface.copy()
+      bg_surface.fill(bg_color)
+      bg_rect = bg_surface.get_rect()
+      bg_rect.center = center
+ 
+    # Draw background box to surface first
+    surface.blit(bg_surface, bg_rect)
+    # Then, draw text to surface
+    surface.blit(msg_surface, msg_rect)
+        
   def game_over(self):
     """
     Return whether the game is over.
     """
     return self.col_pix_top(self.gen_col) < 3*self.bh
+  
+  def read_highscore(self):
+    """
+    Read high score from file.
+    """
+    # Read highscore from file
+    try:
+      # Open high score file
+      f = open(self._highscore_filename, 'r')
+      # Read first line of file
+      line = f.readline()
+      # Close file
+      f.close()
+      
+      # Separate score and hash
+      highscore, hs_hash = line.split(",")
+      # Convert highscore to integer
+      highscore = int(highscore)
+      
+      # Check hash
+      if hs_hash == self.hash_score(highscore):
+        # If hash matches, use highscore
+        self.highscore = highscore
+      else:
+        # Otherwise, raise exception
+        raise Exception("High score hash check failed.")
+    # If getting high score fails, then reset to high score of 0
+    except:
+      self.highscore = 0
+      # Write high score of 0 to file
+      self.write_highscore()
+    
+  def write_highscore(self):
+    """
+    Write current highscore to highscore file.
+    """
+    # Write high score and hash to file    
+    f = open(self._highscore_filename, 'w')
+    f.write("%d,%s" % (self.highscore, self.hash_score(self.highscore)))
+    f.close()
+    
+  def hash_score(self, score):
+    """
+    Return SHA-256 hash of passed score.
+      score   integer score
+    """
+    # Create hash object
+    h = hashlib.new("sha256")
+    # Add score string
+    h.update("%d%s" % (score, self._hash_key))
+    # Return hash of score
+    return h.hexdigest()
     
