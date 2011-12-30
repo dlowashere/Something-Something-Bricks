@@ -97,33 +97,22 @@ class DoubleBrick:
   Class for pair of bricks.
   """
   
-  # Probability of getting a breaker brick
-  _breaker_prob = 0.20
-  
-  def __init__(self, brick_colors, initial_position, size):
+  def __init__(self, brick_colors, breaker, initial_position, size):
     """
     Default constructor. Bricks are arranged vertically initially.
     Arguments:
-      brick_colors      List of possible brick (R, G, B) colors
+      brick_colors      (c1, c2) colors for next brick pair
+      breaker           (b1, b2) boolean noting whehter a breaker or not
       initial_position  (x, y) topleft corner of top brick
       size              (width, height) size of each brick
     """  
+    self.bw, self.bh = self.size = size
     # Create two single bricks
-    self.brick1 = Brick(random.choice(brick_colors), initial_position, size, self.gen_breaker())
+    self.brick1 = Brick(brick_colors[0], initial_position, size, breaker[0])
     # Position of second brick
     x = initial_position[0]
-    y = initial_position[1] + size[1]
-    self.brick2 = Brick(random.choice(brick_colors), (x, y), size, self.gen_breaker())
-  
-  def gen_breaker(self):
-    """
-    Return true with probability _breaker_prob to determine whether
-    a breaker brick is generated.
-    """
-    if random.random() < self._breaker_prob:
-      return True
-    else:
-      return False
+    y = initial_position[1] + self.bh
+    self.brick2 = Brick(brick_colors[1], (x, y), size, breaker[1])
     
   def top_edge(self):
     """
@@ -148,4 +137,15 @@ class DoubleBrick:
     Return left edge of right brick.
     """
     return max(self.brick1.rect.left, self.brick2.rect.left)
+
+  def move(self, topleft):
+    """
+    Move the topleft of this double brick to location topleft. Second brick
+    is always placed below.
+    Arguments
+      topleft    (x, y) new top corner of double brick pair
+    """
+    self.brick1.topleft = topleft
+    self.brick2.topleft = topleft
+    
   

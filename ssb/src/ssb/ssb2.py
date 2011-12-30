@@ -45,7 +45,7 @@ game_state = "menu"
 game_board = Board(board_size, brick_size, pygame.mixer)
 
 # topleft corner of where to display menu
-menu_topleft = (game_board.max_pos_x + 2*game_board.bw, game_board.min_pos_y + 5*game_board.bh)
+menu_topleft = (game_board.max_pos_x + 2*game_board.bw, game_board.min_pos_y + 9*game_board.bh)
 # Create menu object
 menu_obj = Menu(menu_topleft, pygame.mixer)
 

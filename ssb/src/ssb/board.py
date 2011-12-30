@@ -9,6 +9,7 @@ Created on Dec 22, 2011
 import hashlib
 import pygame
 import math
+import random
 
 from brick import Brick
 from brick import DoubleBrick
@@ -31,6 +32,9 @@ class Board:
   
   # Key for hashing score
   _hash_key = "SomethingSomethingBricks"
+      
+  # Probability of getting a breaker brick
+  _breaker_prob = 0.20
   
   def __init__(self, board_size, brick_size, mixer):
     """
@@ -59,6 +63,10 @@ class Board:
       
     # Current dropping brick pair
     self.db = None
+    # Position to display next brick
+    self.next_topleft = (self.max_pos_x + 2*self.bw, self.min_pos_y + self.bh)
+    # Generate next brick placeholder
+    self.gen_next()
     
     ## Sounds
     # Directory where sounds are kept
@@ -75,6 +83,24 @@ class Board:
     
     # Get high score
     self.read_highscore()      
+  
+  def gen_breaker(self):
+    """
+    Return true with probability _breaker_prob to determine whether
+    a breaker brick is generated.
+    """
+    if random.random() < self._breaker_prob:
+      return True
+    else:
+      return False
+    
+  def gen_next(self):
+    """
+    Generate parameters for next brick.
+    """
+    # Determine next brick colors and breaker status
+    self.next_color = (random.choice(self._brick_colors),random.choice(self._brick_colors)) 
+    self.next_breaker = (self.gen_breaker(), self.gen_breaker()) 
   
   def start(self):
     """
@@ -104,7 +130,10 @@ class Board:
     Create a new dropping brick.
     """
     # Create a dropping brick pair
-    self.db = DoubleBrick(self._brick_colors, (self.gen_col*self.bw + self.left, self.top), self.brick_size)
+    self.db = DoubleBrick(self.next_color, self.next_breaker, 
+                          (self.gen_col*self.bw + self.left, self.top), self.brick_size)
+    # Determine next brick colors and breaker status
+    self.gen_next()
   
   def col_top(self, col):
     """
@@ -391,6 +420,17 @@ class Board:
       # Dropping brick
       surface.blit(self.b1().image, self.b1().rect)
       surface.blit(self.b2().image, self.b2().rect)
+      
+    # Draw "Next" label
+    font_obj = pygame.font.Font(None, 28)
+    self.print_surface("Next", surface, (self.max_pos_x + int(self.bw*3/2), self.min_pos_y), font_obj)
+    # Draw next brick
+    next_db = DoubleBrick(self.next_color, self.next_breaker, self.next_topleft, self.brick_size)
+    surface.blit(next_db.brick1.image, next_db.brick1.rect)
+    surface.blit(next_db.brick2.image, next_db.brick2.rect)
+    # Draw rectangle around next brick
+    pygame.draw.rect(surface, white, pygame.rect.Rect((self.max_pos_x + int(self.bw*7/4), self.min_pos_y + int(self.bh*3/4)), (int(self.bw*3/2), int(self.bh*5/2))), 2)
+    
     # Stacked bricks
     for col in range(self.num_cols):
       for row in range(self.num_rows):
@@ -403,7 +443,7 @@ class Board:
     # Font object for rendering text
     font_obj = pygame.font.Font(None, 28)
     # Location to print score
-    topleft = [self.max_pos_x + 2*self.bw, self.min_pos_y + self.bh]
+    topleft = [self.max_pos_x + 2*self.bw, self.min_pos_y + 5*self.bh]
     # Print score to screen
     self.print_surface("Score: %d" % self.score, surface, topleft, font_obj)
     # Print highscore to screen
