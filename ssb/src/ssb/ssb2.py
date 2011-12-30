@@ -27,7 +27,7 @@ pygame.mixer.pre_init(44100, -16, 2, 512)
 # Initialize Pygame    
 pygame.init()
 # Window size
-size = width, height = (num_cols+2)*2*bw, (num_rows+2)*bh
+size = width, height = (num_cols + 2)*2*bw, (num_rows - 1)*bh
 # Initialize window
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption('Something Something Bricks')
@@ -45,15 +45,22 @@ game_state = "menu"
 game_board = Board(board_size, brick_size, pygame.mixer)
 
 # topleft corner of where to display menu
-menu_topleft = (game_board.max_pos_x + 2*game_board.bw, game_board.min_pos_y + 9*game_board.bh)
+menu_topleft = (game_board.max_pos_x + 3*game_board.bw, game_board.min_pos_y + 12*game_board.bh)
 # Create menu object
 menu_obj = Menu(menu_topleft, pygame.mixer)
 
 # Directory where sounds are kept
 snd_dir = "../../sounds/"
 # Background music
-#snd_background = pygame.mixer.Sound(snd_dir + "fkobbe-121111final.wav")
-#snd_background.play(loops=-1)
+snd_background = pygame.mixer.Sound(snd_dir + "ssb_bg.ogg")
+snd_bg_vol = 0.2 # Volume when on
+snd_background.play(loops=-1)
+# Default is not muted
+mute = True
+if mute:
+  snd_background.set_volume(0)
+else:
+  snd_background.set_volume(snd_bg_vol)
 
 # Main loop
 while True:
@@ -70,12 +77,16 @@ while True:
       elif event.key == pygame.K_i:
         pygame.image.save(screen, "screenshot_%d.png" % screen_shot_count)
         screen_shot_count += 1
-
-      elif event.key == pygame.K_r:
-        game_board.start()
-        game_state = "play"
+      # Toggle mute
       elif event.key == pygame.K_m:
-        game_state = "menu"
+        # If muted
+        if snd_background.get_volume() == 0:
+          # Change volume to on
+          snd_background.set_volume(snd_bg_vol)
+        # If not muted
+        else:
+          # Mute
+          snd_background.set_volume(0)
         
       else:
         # Key down handling specific to play state
@@ -136,21 +147,15 @@ while True:
   # Blank screen
   screen.fill(black)
   
-  # Draw walls
-  pygame.draw.line(screen, white, (bw, bh), (bw, (num_rows+1)*bh), 1)
-  pygame.draw.line(screen, white, (bw, (num_rows+1)*bh), ((num_cols+1)*bw, (num_rows+1)*bh), 1)
-  pygame.draw.line(screen, white, ((num_cols+1)*bw, bh), ((num_cols+1)*bw, (num_rows+1)*bh), 1)
-  # Generation line
-  pygame.draw.line(screen, white, (bw, bh), ((num_cols+1)*bw, bh))
-  # Game over line
-  pygame.draw.line(screen, gray, (bw, 3*bh), ((num_cols+1)*bw, 3*bh))
+  # Draw board area walls
+  game_board.draw_walls(screen)
 
   # Draw menu
   if game_state == "menu":
     menu_obj.draw_menu(screen)
   elif game_state == "play":
     # If the game is not over
-    if not game_board.game_over():
+    if not game_board.state == "game_over":
       # Advance game
       game_board.update()
     # If the game is over, return to menu

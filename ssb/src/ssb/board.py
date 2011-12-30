@@ -39,6 +39,28 @@ class Board:
   # Time to show break graphic before continuing on (in milliseconds) 
   _break_time = 500
   
+  ## Wall images
+  # Left wall segment
+  _wall_l = pygame.sprite.Sprite()
+  _wall_l.image = pygame.image.load("../../images/wall_left.png")
+  _wall_l.rect = _wall_l.image.get_rect()
+  # Right wall segment
+  _wall_r = pygame.sprite.Sprite()
+  _wall_r.image = pygame.image.load("../../images/wall_right.png")
+  _wall_r.rect = _wall_r.image.get_rect()
+  # Bottom wall segment
+  _wall_b = pygame.sprite.Sprite()
+  _wall_b.image = pygame.image.load("../../images/wall_bottom.png")
+  _wall_b.rect = _wall_b.image.get_rect()
+  # Bottom right corner
+  _wall_br = pygame.sprite.Sprite()
+  _wall_br.image = pygame.image.load("../../images/wall_br.png")
+  _wall_br.rect = _wall_br.image.get_rect()
+  # Bottom left corner
+  _wall_bl = pygame.sprite.Sprite()
+  _wall_bl.image = pygame.image.load("../../images/wall_bl.png")
+  _wall_bl.rect = _wall_bl.image.get_rect()
+    
   def __init__(self, board_size, brick_size, mixer):
     """
     Default constructor.
@@ -54,7 +76,7 @@ class Board:
     self.gen_col = int(math.ceil(self.num_cols/2))
     # Top left corner (pixels) of game board
     # Indent in by one block on each side
-    self.top, self.left = self.topleft = (self.bw, self.bh)
+    self.left, self.top = self.topleft = (self.bw, -2*self.bh)
     # Min, max possible values for brick topleft corner
     self.min_pos_x = self.left
     self.max_pos_x = self.left + self.bw * (self.num_cols - 1)
@@ -67,7 +89,7 @@ class Board:
     # Current dropping brick pair
     self.db = None
     # Position to display next brick
-    self.next_topleft = (self.max_pos_x + 2*self.bw, self.min_pos_y + self.bh)
+    self.next_topleft = (self.max_pos_x + 2*self.bw, self.min_pos_y + 4*self.bh)
     # Generate next brick placeholder
     self.gen_next()
     
@@ -312,24 +334,30 @@ class Board:
         self._fallspeed_slow = int(self.score/200) + 1
         # Create a new brick after all breaks have occurred
         self.state = "new_brick"
+        
     # Drop bricks to fill holes after breaking bricks
     elif self.state == "drop":
       pygame.time.wait(self._break_time)    
       self.drop_bricks()
       # Rerun breaking to find combos
       self.state = "break"
+      
     # Create new brick after breaking
     elif self.state == "new_brick":
       # Create new brick if the game is not over
-      if not self.game_over():
+      if (self.stacked_bricks[self.gen_col][1].empty() and \
+      self.stacked_bricks[self.gen_col][2].empty()):
         self.create_brick()
+        # Go back to dropping brick
+        self.state = "fall"
       else:
         # If the game is over because another spawned brick cannot fall,
         # still create a new one
         if self.stacked_bricks[self.gen_col][1].empty():
           self.create_brick()
-      # Go back to dropping brick
-      self.state = "fall"
+        # Game state is set to game over
+        self.state = "game_over"
+      
     # Update falling brick
     elif self.state == "fall":
       # If the brick pair hasn't reached the bottom,
@@ -367,6 +395,8 @@ class Board:
         # Next, handle any breaking of bricks
         self.state = "break"
 
+    elif self.state == "game_over":
+      pass
     else:
       raise Exception("Unknown state in game board.")
       
@@ -450,18 +480,39 @@ class Board:
       
     # Draw "Next" label
     font_obj = pygame.font.Font(None, 28)
-    self.print_surface("Next", surface, (self.max_pos_x + int(self.bw*3/2), self.min_pos_y), font_obj)
+    self.print_surface("Next", surface, (self.max_pos_x + int(self.bw*3/2), self.min_pos_y + 3*self.bh), font_obj)
     # Draw next brick
     next_db = DoubleBrick(self.next_color, self.next_breaker, self.next_topleft, self.brick_size)
     surface.blit(next_db.brick1.image, next_db.brick1.rect)
     surface.blit(next_db.brick2.image, next_db.brick2.rect)
     # Draw rectangle around next brick
-    pygame.draw.rect(surface, white, pygame.rect.Rect((self.max_pos_x + int(self.bw*7/4), self.min_pos_y + int(self.bh*3/4)), (int(self.bw*3/2), int(self.bh*5/2))), 2)
+    pygame.draw.rect(surface, white, pygame.rect.Rect((self.max_pos_x + int(self.bw*7/4), self.min_pos_y + int(self.bh*15/4)), (int(self.bw*3/2), int(self.bh*5/2))), 2)
     
     # Stacked bricks
     for col in range(self.num_cols):
       for row in range(self.num_rows):
         surface.blit(self.stacked_bricks[col][row].image, self.stacked_bricks[col][row].rect)
+
+  def draw_walls(self, surface):
+    """
+    Draw walls of board area to the passed Pygame surface.
+    """   
+    # Draw walls
+    # Left and right walls
+    for row in range(self.num_rows):
+      self._wall_l.rect.topleft = (self.left - self.bw, self.bh*row + self.top)
+      surface.blit(self._wall_l.image, self._wall_l.rect)
+      self._wall_r.rect.topleft = (self.left + self.num_cols*self.bw, self.top + self.bh*row)
+      surface.blit(self._wall_r.image, self._wall_r.rect)
+    # Bottom wall
+    for col in range(self.num_cols):
+      self._wall_b.rect.topleft = ((self.left + col*self.bw, self.top + self.bh*self.num_rows))
+      surface.blit(self._wall_b.image, self._wall_b.rect)
+    # Bottom corners
+    self._wall_br.rect.topleft = (self.left + self.num_cols*self.bw, self.top + self.bh*self.num_rows)
+    self._wall_bl.rect.topleft = (self.left - self.bw, self.top + self.bh*self.num_rows) 
+    surface.blit(self._wall_br.image, self._wall_br.rect)      
+    surface.blit(self._wall_bl.image, self._wall_bl.rect)
   
   def draw_score(self, surface):
     """
@@ -470,7 +521,7 @@ class Board:
     # Font object for rendering text
     font_obj = pygame.font.Font(None, 28)
     # Location to print score
-    topleft = [self.max_pos_x + 2*self.bw, self.min_pos_y + 5*self.bh]
+    topleft = [self.max_pos_x + 2*self.bw, self.min_pos_y + 8*self.bh]
     # Print score to screen
     self.print_surface("Score: %d" % self.score, surface, topleft, font_obj)
     # Print highscore to screen
@@ -543,9 +594,9 @@ class Board:
     """
     Return whether the game is over.
     """
-    #return self.col_pix_top(self.gen_col) < self.top + 2*self.bh
-    return not (self.stacked_bricks[self.gen_col][1].empty() and \
-      self.stacked_bricks[self.gen_col][2].empty())
+    return self.state == "game_over"
+    #return not (self.stacked_bricks[self.gen_col][1].empty() and \
+    #  self.stacked_bricks[self.gen_col][2].empty())
   
   def read_highscore(self):
     """

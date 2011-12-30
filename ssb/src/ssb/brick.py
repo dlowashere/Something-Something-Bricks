@@ -7,7 +7,6 @@ Created on Dec 20, 2011
 '''
 
 import pygame
-import random
 import math
 
 from color import *
@@ -82,7 +81,7 @@ class Brick(pygame.sprite.Sprite):
     """
     Determine grid index of row where brick is. Uses the bottom grid if split between two grid spaces.
     """
-    return int(math.ceil(float(self.rect.top)/self.bh)) - 1
+    return int(math.ceil(float(self.rect.top)/self.bh)) + 2
   
   def break_brick(self):
     """
