@@ -17,7 +17,7 @@ class Brick(pygame.sprite.Sprite):
   """
   
   # Images folder
-  _img_dir = "../../images/"
+  _img_dir = "images/"
   # Images for breaker gems
   _img_yellow_breaker = pygame.image.load(_img_dir + "yellow_breaker.png")
   _img_blue_breaker = pygame.image.load(_img_dir + "blue_breaker.png")

@@ -50,7 +50,7 @@ menu_topleft = (game_board.max_pos_x + 3*game_board.bw, game_board.min_pos_y + 1
 menu_obj = Menu(menu_topleft, pygame.mixer)
 
 # Directory where sounds are kept
-snd_dir = "../../sounds/"
+snd_dir = "sounds/"
 # Background music
 snd_background = pygame.mixer.Sound(snd_dir + "ssb_bg.ogg")
 snd_bg_vol = 0.2 # Volume when on

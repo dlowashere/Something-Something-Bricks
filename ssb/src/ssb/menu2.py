@@ -12,6 +12,9 @@ from color import *
 
 class Menu:
   
+  # Directory where fonts are kept
+  _fonts_dir = "fonts/"
+  
   def __init__(self, topleft = (0, 0), mixer=None):
     """
     Default constructor.
@@ -28,7 +31,7 @@ class Menu:
     # Add sounds
     if mixer:
       # Directory where sounds are kept
-      snd_dir = "../../sounds/"
+      snd_dir = "sounds/"
       # Sound for key press
       self.snd_key = mixer.Sound(snd_dir + "select.wav")
       self.snd_key.set_volume(0.1)
@@ -38,9 +41,9 @@ class Menu:
     Draw menu to the passed surface starting at the topleft corner passed.
       surface    Surface to draw menu to.
     """
-    font_obj = pygame.font.Font(None, 28)
-    self.print_surface("Play", surface, (self.left + 5, self.top + 5), font_obj)
-    self.print_surface("Exit", surface, (self.left + 5, self.top + self.linespacing + 5), font_obj)
+    font_obj = pygame.font.Font(self._fonts_dir + "OpenSans-Regular.ttf", 20)
+    self.print_surface("Play", surface, (self.left + 5, self.top), font_obj)
+    self.print_surface("Exit", surface, (self.left + 5, self.top + self.linespacing), font_obj)
     # Draw selection cursor
     if self.selected == "Play":
       pygame.draw.rect(surface, white, pygame.rect.Rect(self.topleft, (100, self.linespacing)), 2)

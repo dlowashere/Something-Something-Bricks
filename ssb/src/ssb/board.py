@@ -40,26 +40,30 @@ class Board:
   _break_time = 500
   
   ## Wall images
+  _img_dir = "images/"
   # Left wall segment
   _wall_l = pygame.sprite.Sprite()
-  _wall_l.image = pygame.image.load("../../images/wall_left.png")
+  _wall_l.image = pygame.image.load(_img_dir + "wall_left.png")
   _wall_l.rect = _wall_l.image.get_rect()
   # Right wall segment
   _wall_r = pygame.sprite.Sprite()
-  _wall_r.image = pygame.image.load("../../images/wall_right.png")
+  _wall_r.image = pygame.image.load(_img_dir + "wall_right.png")
   _wall_r.rect = _wall_r.image.get_rect()
   # Bottom wall segment
   _wall_b = pygame.sprite.Sprite()
-  _wall_b.image = pygame.image.load("../../images/wall_bottom.png")
+  _wall_b.image = pygame.image.load(_img_dir + "wall_bottom.png")
   _wall_b.rect = _wall_b.image.get_rect()
   # Bottom right corner
   _wall_br = pygame.sprite.Sprite()
-  _wall_br.image = pygame.image.load("../../images/wall_br.png")
+  _wall_br.image = pygame.image.load(_img_dir + "wall_br.png")
   _wall_br.rect = _wall_br.image.get_rect()
   # Bottom left corner
   _wall_bl = pygame.sprite.Sprite()
-  _wall_bl.image = pygame.image.load("../../images/wall_bl.png")
+  _wall_bl.image = pygame.image.load(_img_dir + "wall_bl.png")
   _wall_bl.rect = _wall_bl.image.get_rect()
+  
+  # Fonts directory
+  _font_dir = "fonts/"
     
   def __init__(self, board_size, brick_size, mixer):
     """
@@ -95,7 +99,7 @@ class Board:
     
     ## Sounds
     # Directory where sounds are kept
-    snd_dir = "../../sounds/"
+    snd_dir = "sounds/"
     # Sound for key press
     self.snd_key = mixer.Sound(snd_dir + "select.wav")
     self.snd_key.set_volume(0.1)
@@ -479,8 +483,8 @@ class Board:
       surface.blit(self.b2().image, self.b2().rect)
       
     # Draw "Next" label
-    font_obj = pygame.font.Font(None, 28)
-    self.print_surface("Next", surface, (self.max_pos_x + int(self.bw*3/2), self.min_pos_y + 3*self.bh), font_obj)
+    font_obj = pygame.font.Font(self._font_dir + "OpenSans-Regular.ttf", 20)
+    self.print_surface("Next", surface, (self.max_pos_x + int(self.bw*3/2), self.min_pos_y + 3*self.bh - 10), font_obj)
     # Draw next brick
     next_db = DoubleBrick(self.next_color, self.next_breaker, self.next_topleft, self.brick_size)
     surface.blit(next_db.brick1.image, next_db.brick1.rect)
@@ -519,7 +523,7 @@ class Board:
     Write the current score to the passed surface. Also note whether game is over.
     """
     # Font object for rendering text
-    font_obj = pygame.font.Font(None, 28)
+    font_obj = pygame.font.Font(self._font_dir + "OpenSans-Regular.ttf", 20)
     # Location to print score
     topleft = [self.max_pos_x + 2*self.bw, self.min_pos_y + 8*self.bh]
     # Print score to screen
