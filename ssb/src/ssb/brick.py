@@ -32,7 +32,11 @@ class Brick(pygame.sprite.Sprite):
   _img_green = pygame.image.load(_img_dir + "green_brick.png")
   _img_bricks = {yellow:_img_yellow, blue:_img_blue, red:_img_red, green:_img_green}
   # Image for broken brick
-  #_img_break = pygame.image.load("../../gems/break.png")
+  _img_blue_broken = pygame.image.load(_img_dir + "blue_broken.png")
+  _img_red_broken = pygame.image.load(_img_dir + "red_broken.png")
+  _img_yellow_broken = pygame.image.load(_img_dir + "yellow_broken.png")
+  _img_green_broken = pygame.image.load(_img_dir + "green_broken.png")
+  _img_broken_bricks = {yellow:_img_yellow_broken, blue:_img_blue_broken, red:_img_red_broken, green:_img_green_broken}
   
   def __init__(self, color=black, initial_position=(0, 0), size=(0,0), breaker=False):
     """
@@ -50,6 +54,9 @@ class Brick(pygame.sprite.Sprite):
     self.bw, self.bh = self.size = size
     self.color = color
     self.breaker = breaker
+    
+    # Brick broken, but graphic not removed yet
+    self.broken = False
     
     # Image for empty brick
     if self.color == black:
@@ -82,9 +89,12 @@ class Brick(pygame.sprite.Sprite):
     Replace brick image with a broken brick image.
     """
     # Change image
-    self.image = self._img_break
+    self.image = self._img_broken_bricks[self.color]
     # Set color to black so this brick is not "rebroken"
     self.color = black
+    self.breaker = False
+    # Mark as broken
+    self.broken = True
     
   def empty(self):
     """

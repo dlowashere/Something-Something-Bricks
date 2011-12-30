@@ -36,6 +36,9 @@ class Board:
   # Probability of getting a breaker brick
   _breaker_prob = 0.20
   
+  # Time to show break graphic before continuing on (in milliseconds) 
+  _break_time = 500
+  
   def __init__(self, board_size, brick_size, mixer):
     """
     Default constructor.
@@ -82,7 +85,7 @@ class Board:
     self.snd_drop.set_volume(0.5)
     
     # Get high score
-    self.read_highscore()      
+    self.read_highscore()    
   
   def gen_breaker(self):
     """
@@ -124,6 +127,8 @@ class Board:
     self.fallspeed = self._fallspeed_slow
     # Reset score
     self.score = 0
+    # Start state is falling brick
+    self.state = "fall"
       
   def create_brick(self):
     """
@@ -294,39 +299,27 @@ class Board:
     Drop brick by fallspeed. If the bottom is reached, then handle breaking
     and spawn a new brick.
     """
-    # If the brick pair hasn't reached the bottom,
-    if self.b1().rect.top < self.col_pix_top(self.b1_col()) - self.fallspeed and \
-      self.b2().rect.top < self.col_pix_top(self.b2_col()) - self.fallspeed:
-      # Drop bricks
-      self.b1().rect.top += self.fallspeed
-      self.b2().rect.top += self.fallspeed
-    # Else one of the bricks has reached the top of a column
-    # In this case, both bricks are dropped
-    else:
-      # Sound for brick reaching bottom
-      self.snd_drop.play()
-          
-      # Brick that hits a surface first needs to handled first (in case stacked)
-      # Set the one that hits first as b1 and it's column as c1
-      # The other one is b2 in column c2
-      if self.b2().rect.top >= self.col_pix_top(self.b2_col()) - self.fallspeed:
-        b2, b1 = self.b1(), self.b2()
-        c2, c1 = self.b1_col(), self.b2_col()
+    # If handling breaking
+    if self.state == "break":
+      # Break bricks given current stacked bricks
+      broken = self.break_bricks()              
+      # Collapse bricks from above if any bricks were broken
+      if broken:
+        self.state = "drop"
+      # Otherwise, continue on
       else:
-        b1, b2 = self.b1(), self.b2()
-        c1, c2 = self.b1_col(), self.b2_col()
-      # Drop bottom brick to bottom
-      b1.rect.top = self.col_pix_top(c1)
-      # Save to array
-      self.stacked_bricks[b1.get_col_index()][b1.get_row_index()] = b1
-      # Now drop the other brick to the bototm
-      b2.rect.top = self.col_pix_top(c2)
-      # Save to array
-      self.stacked_bricks[b2.get_col_index()][b2.get_row_index()] = b2
-
-      # Handle any breaking that might occur
-      self.break_bricks()
-
+        # Fall speed increases as points are scored
+        self._fallspeed_slow = int(self.score/200) + 1
+        # Create a new brick after all breaks have occurred
+        self.state = "new_brick"
+    # Drop bricks to fill holes after breaking bricks
+    elif self.state == "drop":
+      pygame.time.wait(self._break_time)    
+      self.drop_bricks()
+      # Rerun breaking to find combos
+      self.state = "break"
+    # Create new brick after breaking
+    elif self.state == "new_brick":
       # Create new brick if the game is not over
       if not self.game_over():
         self.create_brick()
@@ -335,42 +328,72 @@ class Board:
         # still create a new one
         if self.stacked_bricks[self.gen_col][1].empty():
           self.create_brick()
+      # Go back to dropping brick
+      self.state = "fall"
+    # Update falling brick
+    elif self.state == "fall":
+      # If the brick pair hasn't reached the bottom,
+      if self.b1().rect.top < self.col_pix_top(self.b1_col()) - self.fallspeed and \
+        self.b2().rect.top < self.col_pix_top(self.b2_col()) - self.fallspeed:
+        # Drop bricks
+        self.b1().rect.top += self.fallspeed
+        self.b2().rect.top += self.fallspeed
+      # Else one of the bricks has reached the top of a column
+      # In this case, both bricks are dropped
+      else:
+        # Sound for brick reaching bottom
+        self.snd_drop.play()
+            
+        # Brick that hits a surface first needs to handled first (in case stacked)
+        # Set the one that hits first as b1 and it's column as c1
+        # The other one is b2 in column c2
+        if self.b2().rect.top >= self.col_pix_top(self.b2_col()) - self.fallspeed:
+          b2, b1 = self.b1(), self.b2()
+          c2, c1 = self.b1_col(), self.b2_col()
+        else:
+          b1, b2 = self.b1(), self.b2()
+          c1, c2 = self.b1_col(), self.b2_col()
+        # Drop bottom brick to bottom
+        b1.rect.top = self.col_pix_top(c1)
+        # Save to array
+        self.stacked_bricks[b1.get_col_index()][b1.get_row_index()] = b1
+        # Now drop the other brick to the bototm
+        b2.rect.top = self.col_pix_top(c2)
+        # Save to array
+        self.stacked_bricks[b2.get_col_index()][b2.get_row_index()] = b2
+        # Remove dropping brick while handling break
+        self.db = None
+  
+        # Next, handle any breaking of bricks
+        self.state = "break"
+
+    else:
+      raise Exception("Unknown state in game board.")
       
   def break_bricks(self):
     """
     Remove any bricks marked as broken.
-    """
-    # Run at least once
-    broken = True
-    
-    # Repeatedly break (combo) until no more breaks to be found
-    while broken: 
-      # If any bricks were broken
-      broken = False
-      # Scan through array
-      for col in range(self.num_cols):
-        for row in range(self.num_rows):
-          # If breaker is touching a brick with the same color
-          if self.stacked_bricks[col][row].breaker:
-            breaker_color = self.stacked_bricks[col][row].color
-            if (col > 0 and self.stacked_bricks[col-1][row].color == breaker_color) or \
-              (col < self.num_cols-1 and self.stacked_bricks[col+1][row].color == breaker_color) or \
-              (row > 0 and self.stacked_bricks[col][row-1].color == breaker_color) or \
-              (row < self.num_rows-1 and self.stacked_bricks[col][row+1].color == breaker_color):
-              # Use spread_break to recursively break proper bricks
-              self.spread_break(col, row, breaker_color)
-              # Play sound for breaking bricks
-              self.snd_break.play()
-              # Bricks have been broken
-              broken = True
+    """ 
+    # If any bricks were broken
+    broken = False
+    # Scan through array
+    for col in range(self.num_cols):
+      for row in range(self.num_rows):
+        # If breaker is touching a brick with the same color
+        if self.stacked_bricks[col][row].breaker:
+          breaker_color = self.stacked_bricks[col][row].color
+          if (col > 0 and self.stacked_bricks[col-1][row].color == breaker_color) or \
+            (col < self.num_cols-1 and self.stacked_bricks[col+1][row].color == breaker_color) or \
+            (row > 0 and self.stacked_bricks[col][row-1].color == breaker_color) or \
+            (row < self.num_rows-1 and self.stacked_bricks[col][row+1].color == breaker_color):
+            # Use spread_break to recursively break proper bricks
+            self.spread_break(col, row, breaker_color)
+            # Play sound for breaking bricks
+            self.snd_break.play()
+            # Bricks have been broken
+            broken = True
             
-      # Collapse bricks from above if any bricks were broken
-      if broken:
-        # Drop bricks to fill up space
-        self.drop_bricks()
-        
-    # Fall speed increases as points are scored
-    self._fallspeed_slow = int(self.score/200) + 1
+    return broken
         
   def drop_bricks(self):
     """
@@ -378,10 +401,14 @@ class Board:
     """
     # Handle each column individual
     for col in range(self.num_cols):
+      # If top row is broken
+      if self.stacked_bricks[col][0].broken:
+        # Replace with an empty brick
+        self.stacked_bricks[col][0] = Brick()
       # For each row, starting from the top
       for row in range(self.num_rows - 1):
-        # If this spot has a brick, and the one below is empty
-        if (not self.stacked_bricks[col][row].empty()) and self.stacked_bricks[col][row+1].empty():
+        # If the next spot is a broken brick
+        if self.stacked_bricks[col][row+1].broken:
           # Move all bricks above down a space, starting from the bottom
           for drop_row in range(row, -1, -1):
             self.stacked_bricks[col][drop_row].rect.top += self.bh
@@ -398,7 +425,7 @@ class Board:
       breaker_color     Color of break to spread
     """
     # Replace image with a broken brick
-    self.stacked_bricks[col][row] = Brick()  
+    self.stacked_bricks[col][row].break_brick()  
     # Increment score for each brick destroyed
     self.score += 10
   

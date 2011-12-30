@@ -144,19 +144,6 @@ while True:
   pygame.draw.line(screen, white, (bw, bh), ((num_cols+1)*bw, bh))
   # Game over line
   pygame.draw.line(screen, gray, (bw, 3*bh), ((num_cols+1)*bw, 3*bh))
-  """
-  # Draw vertical grid lines
-  for x in range(5):
-    pygame.draw.line(screen, gray, ((2+x)*bw, bh), ((2+x)*bw, 21*bh), 1)
-  # Draw horizontal grid lines
-  for y in range(19):
-    pygame.draw.line(screen, gray, (bw, (2+y)*bh), (7*bw, (2+y)*bh), 1)
-  """
-
-  # Draw falling and stacked bricks
-  game_board.draw_bricks(screen)
-  # Draw score
-  game_board.draw_score(screen)
 
   # Draw menu
   if game_state == "menu":
@@ -171,6 +158,11 @@ while True:
       game_state = "menu"
   else:
     raise Exception("Unknown game state")
+  
+  # Draw falling and stacked bricks
+  game_board.draw_bricks(screen)
+  # Draw score
+  game_board.draw_score(screen)
   
   # Refresh display
   pygame.display.update()    
