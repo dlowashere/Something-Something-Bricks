@@ -45,7 +45,7 @@ game_state = "menu"
 game_board = Board(board_size, brick_size, pygame.mixer)
 
 # topleft corner of where to display menu
-menu_topleft = (game_board.max_pos_x + 3*game_board.bw, game_board.min_pos_y + 12*game_board.bh)
+menu_topleft = (game_board.max_pos_x + 4*game_board.bw, 2*game_board.bh)
 # Create menu object
 menu_obj = Menu(menu_topleft, pygame.mixer)
 
@@ -56,7 +56,7 @@ snd_background = pygame.mixer.Sound(snd_dir + "ssb_bg.ogg")
 snd_bg_vol = 0.2 # Volume when on
 snd_background.play(loops=-1)
 # Default is not muted
-mute = True
+mute = False
 if mute:
   snd_background.set_volume(0)
 else:
@@ -102,10 +102,10 @@ while True:
             game_board.speed_up()
           # On rotation, always first (top) brick that moves
           # Rotate clockwise
-          elif event.key == pygame.K_e:
+          elif event.key == pygame.K_x:
             game_board.rotate_cw()
           # Rotate counter-clockwise
-          elif event.key == pygame.K_q:
+          elif event.key == pygame.K_z:
             game_board.rotate_ccw()
             
         # Key down handling specific to menu state

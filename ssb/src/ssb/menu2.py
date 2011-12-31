@@ -42,8 +42,10 @@ class Menu:
       surface    Surface to draw menu to.
     """
     font_obj = pygame.font.Font(self._fonts_dir + "OpenSans-Regular.ttf", 20)
-    self.print_surface("Play", surface, (self.left + 5, self.top), font_obj)
-    self.print_surface("Exit", surface, (self.left + 5, self.top + self.linespacing), font_obj)
+    topleft = [self.left + 5, self.top]
+    self.print_surface("Play", surface, topleft, font_obj)
+    topleft[1] += self.linespacing
+    self.print_surface("Exit", surface, topleft, font_obj)
     # Draw selection cursor
     if self.selected == "Play":
       pygame.draw.rect(surface, white, pygame.rect.Rect(self.topleft, (100, self.linespacing)), 2)
@@ -51,6 +53,20 @@ class Menu:
       pygame.draw.rect(surface, white, pygame.rect.Rect((self.left, self.top + self.linespacing), (100, self.linespacing)), 2)
     else:
       raise Exception("Unknown menu state.")
+    # Print instructions
+    control_linespacing = 18
+    font_obj = pygame.font.Font(self._fonts_dir + "OpenSans-Regular.ttf", 14)
+    topleft[1] += 2*self.linespacing
+    self.print_surface("Z, X to rotate", surface, topleft, font_obj)
+    topleft[1] += control_linespacing
+    self.print_surface("Arrow keys to move", surface, topleft, font_obj)
+    topleft[1] += control_linespacing
+    self.print_surface("M to mute", surface, topleft, font_obj)
+    
+    # Draw rectangle around everything
+    topleft = (self.topleft[0] - 8, self.topleft[1] - 8)
+    size = (160, 160)
+    pygame.draw.rect(surface, gray, pygame.Rect(topleft, size), 2)
     
   def menu_up(self):
     """

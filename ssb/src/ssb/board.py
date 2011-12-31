@@ -525,7 +525,7 @@ class Board:
     # Font object for rendering text
     font_obj = pygame.font.Font(self._font_dir + "OpenSans-Regular.ttf", 20)
     # Location to print score
-    topleft = [self.max_pos_x + 2*self.bw, self.min_pos_y + 8*self.bh]
+    topleft = [self.max_pos_x + 2*self.bw, self.min_pos_y + 11*self.bh]
     # Print score to screen
     self.print_surface("Score: %d" % self.score, surface, topleft, font_obj)
     # Print highscore to screen
