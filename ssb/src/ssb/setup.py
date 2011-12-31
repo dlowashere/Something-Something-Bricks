@@ -17,4 +17,4 @@ def isSystemDLL(pathname):
         return origIsSystemDLL(pathname)
 py2exe.build_exe.isSystemDLL = isSystemDLL
 
-setup(console=["ssb2.py"])
+setup(console=["ssb.py"])
