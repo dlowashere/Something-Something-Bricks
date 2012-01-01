@@ -336,6 +336,7 @@ class Board:
       else:
         # Fall speed increases as points are scored
         self._fallspeed_slow = int(self.score/200) + 1
+        self.fallspeed = self._fallspeed_slow
         # Create a new brick after all breaks have occurred
         self.state = "new_brick"
         
